@@ -2,6 +2,8 @@
 
 A Windows desktop remote terminal application, comparable to Xshell. Supports SSH v2 and Telnet, SFTP file transfer, jump hosts, and a multilingual UI (English / Traditional Chinese).
 
+![RemoteShell — 10 hosts connected in the connection list](assets/screenshot-connected-10-hosts.png)
+
 ## Features
 
 - SSH v2 and Telnet connections

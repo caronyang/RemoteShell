@@ -2,6 +2,8 @@
 
 Windows 桌面遠端終端機軟體，功能對標 Xshell。支援 SSH v2 與 Telnet、SFTP 檔案傳輸、跳板機，以及多語系介面（英文 / 繁體中文）。
 
+![RemoteShell——連線清單 10 個主機全部連線中](assets/screenshot-connected-10-hosts.png)
+
 ## 功能總覽
 
 - SSH v2 與 Telnet 連線
