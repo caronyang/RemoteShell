@@ -1,0 +1,12 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "outDir": "dist",
+    "rootDir": "src",
+    "sourceMap": true
+  },
+  // 只發佈 main 與 shared；preload 由 vite（build:preload）打包成單一自帶檔。
+  // 若讓 tsc 也輸出 dist/preload/index.js，單獨跑 `build:main` 會用「未打包版」蓋掉 bundle，
+  // 造成 sandbox preload 找不到 ../shared/constants（實際踩過）。
+  "include": ["src/shared/**/*.ts", "src/main/**/*.ts"]
+}

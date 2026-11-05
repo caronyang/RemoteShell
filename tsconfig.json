@@ -1,0 +1,30 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "lib": ["ES2022"],
+    "types": ["node"],
+    "strict": true,
+    "noImplicitOverride": true,
+    "noUncheckedIndexedAccess": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "forceConsistentCasingInFileNames": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "sourceMap": true
+  },
+  "include": [
+    "src/shared/**/*.ts",
+    "src/main/**/*.ts",
+    "src/preload/**/*.ts",
+    "tests/**/*.ts",
+    "vite.config.ts"
+  ],
+  // 免費工程師的 renderer 測試（import .tsx）需要 DOM + jsx，屬 renderer 專案；
+  // 放在 node 專案會把 DOM 型別帶進 main。若之後還有多個 renderer 測試，需另立 tsconfig.tests.renderer.json。
+  "exclude": ["tests/unit/connection-tree.spec.ts"]
+}

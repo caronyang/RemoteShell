@@ -1,0 +1,1416 @@
+/* base.css — 版面基礎與元件密度；顏色一律取自 tokens.css 變數 */
+@import './tokens.css';
+
+/* ---------- M4-04 內嵌字型（build/fonts，OFL-1.1） ----------
+   同一個 family 拆成兩個 unicode-range 的 face，瀏覽器會逐字挑選：
+   - Cascadia Mono：ASCII / 框線 U+2500–257F / 幾何符號 U+25B2 U+25BC（htop 排序箭頭）
+   - Noto Sans Mono CJK TC：Cascadia 沒有的 CJK 全形（漢字、全形標點、假名）
+   這樣任何只寫 font-family: "Cascadia Mono" 的地方（含 xterm 的 fontFamily 設定、
+   使用者自訂的連線字型）都會自動補上 CJK，不必依賴系統安裝的字型。
+   Consolas 只出現在 fallback 清單（tokens.css），不打包。 */
+@font-face {
+  font-family: 'Cascadia Mono';
+  src: url('../../../build/fonts/CascadiaMono-Regular.ttf') format('truetype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+0000-2E7F;
+}
+
+@font-face {
+  font-family: 'Cascadia Mono';
+  src: url('../../../build/fonts/NotoSansMonoCJKtc-Regular.otf') format('opentype');
+  font-weight: 400;
+  font-style: normal;
+  font-display: block;
+  unicode-range: U+2E80-2FFF, U+3000-30FF, U+3100-31FF, U+3200-33FF, U+3400-4DBF,
+    U+4E00-9FFF, U+A000-A4CF, U+F900-FAFF, U+FE30-FE4F, U+FF00-FFEF, U+20000-2FA1F;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: var(--font-ui);
+  font-size: var(--font-ui-size);
+  color: var(--text);
+  background: var(--surface);
+  overflow: hidden;
+  user-select: none;
+}
+
+button,
+input,
+select {
+  font: inherit;
+  color: inherit;
+}
+
+/* 焦點框：一律 2px --primary（無障礙基準） */
+:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* M4-05 無障礙：QA 逐項驗的對象顯式列出（與全域規則同值，防未來個別覆寫時遺漏） */
+.rs-btn:focus-visible,
+.rs-input:focus-visible,
+.rs-select:focus-visible,
+.rs-tab:focus-visible,
+.rs-tree__row:focus-visible,
+.rs-menu__item:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: 1px;
+}
+
+.rs-app {
+  display: grid;
+  grid-template-rows: 32px 26px 40px 1fr 28px;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.rs-titlebar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: 0 var(--space-2) 0 var(--space-3);
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--border);
+  -webkit-app-region: drag;
+}
+
+.rs-titlebar__title {
+  font-weight: 600;
+  flex: 1;
+}
+
+.rs-titlebar__controls {
+  display: flex;
+  -webkit-app-region: no-drag;
+}
+
+.rs-menubar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  background: var(--surface-subtle);
+  border-bottom: 1px solid var(--border);
+}
+
+.rs-menubar__spacer {
+  flex: 1;
+}
+
+.rs-toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.rs-body {
+  display: flex;
+  min-height: 0;
+}
+
+.rs-sidebar {
+  display: flex;
+  flex-direction: column;
+  min-width: var(--sidebar-min);
+  max-width: var(--sidebar-max);
+  border-right: 1px solid var(--border);
+  background: var(--surface);
+}
+
+.rs-sidebar__header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--density-toolbar);
+  padding: 0 var(--space-2);
+  font-weight: 600;
+}
+
+.rs-sidebar__header span {
+  flex: 1;
+}
+
+.rs-sidebar__body {
+  flex: 1;
+  overflow: auto;
+  padding: var(--space-1) 0;
+}
+
+.rs-sidebar__legend {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 2px var(--space-2);
+  padding: var(--space-2);
+  border-top: 1px solid var(--border);
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+.rs-resizer {
+  width: 6px;
+  cursor: col-resize;
+  background: transparent;
+  border: 0;
+  padding: 0;
+  margin: 0;
+}
+
+.rs-resizer:hover,
+.rs-resizer:focus-visible {
+  background: var(--primary);
+  opacity: 0.35;
+}
+
+/* #5 側欄收合：收合後的左緣展開鈕（UI-01「可整個收合」；24px 細條在驗收範圍 24–32px 內） */
+.rs-sidebar__expand {
+  flex: none;
+  width: 24px;
+  align-self: stretch;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 0;
+  border-right: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.rs-sidebar__expand:hover,
+.rs-sidebar__expand:focus-visible {
+  background: var(--surface);
+  color: var(--text);
+}
+
+.rs-main {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+.rs-tabs {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: var(--density-tab);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+  overflow: hidden;
+}
+
+.rs-terminal {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  background: var(--terminal-bg);
+  color: var(--terminal-fg);
+  font-family: var(--font-terminal);
+  font-size: var(--font-terminal-size);
+}
+
+.rs-terminal__pane {
+  position: absolute;
+  inset: 0;
+  padding: 4px 6px;
+}
+
+.rs-terminal__xterm {
+  width: 100%;
+  height: 100%;
+}
+
+.rs-terminal__empty {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  font-family: var(--font-ui);
+  font-size: var(--font-ui-size);
+}
+
+.rs-terminal__badge {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  margin: 0;
+  padding: 2px 8px;
+  border-radius: var(--radius-control);
+  background: var(--surface-subtle);
+  color: var(--text);
+  font-family: var(--font-ui);
+  font-size: 11px;
+}
+
+.rs-queue {
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+  display: flex;
+  flex-direction: column;
+  min-height: var(--queue-collapsed);
+}
+
+.rs-queue__head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--queue-collapsed);
+  padding: 0 var(--space-2);
+  font-weight: 600;
+}
+
+.rs-queue__head button {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.rs-queue__body {
+  /* FAIL-1 修正：flex:1（basis 0）會吃掉 inline height，展開高度以設定值為準 */
+  flex: none;
+  min-height: 0;
+  overflow: auto;
+  padding: var(--space-2);
+  color: var(--text-secondary);
+}
+
+.rs-statusbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  padding: 0 var(--space-3);
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+
+.rs-statusbar__spacer {
+  flex: 1;
+}
+
+.rs-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 16px;
+  height: 16px;
+  padding: 0 4px;
+  border-radius: 8px;
+  background: var(--danger);
+  color: var(--surface);
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.rs-empty {
+  padding: var(--space-4);
+  color: var(--text-secondary);
+  text-align: center;
+}
+
+/* ---------- 共用元件（M1-05） ---------- */
+.rs-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid transparent;
+  border-radius: var(--radius-control);
+  background: transparent;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.rs-btn--primary {
+  background: var(--primary);
+  color: var(--surface);
+}
+
+.rs-btn--primary:hover:not(:disabled) {
+  background: var(--primary-hover);
+}
+
+.rs-btn--secondary {
+  border-color: var(--border);
+  background: var(--surface);
+}
+
+.rs-btn--secondary:hover:not(:disabled) {
+  background: var(--surface-subtle);
+}
+
+.rs-btn--ghost:hover:not(:disabled) {
+  background: var(--surface-subtle);
+}
+
+.rs-btn--danger {
+  background: var(--danger);
+  color: var(--surface);
+}
+
+.rs-btn:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.rs-btn--ghost {
+  padding: 0 6px;
+}
+
+.rs-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.rs-field__label {
+  color: var(--text-secondary);
+}
+
+.rs-field__error {
+  margin: 0;
+  color: var(--danger);
+}
+
+.rs-input,
+.rs-select {
+  height: 28px;
+  padding: 0 var(--space-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  min-width: 0;
+}
+
+.rs-input[aria-invalid='true'] {
+  border-color: var(--danger);
+}
+
+.rs-checkbox {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: var(--density-tree-row);
+}
+
+.rs-checkbox input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary);
+}
+
+/* ---------- 功能表 ---------- */
+.rs-menu {
+  position: relative;
+}
+
+.rs-menu__title {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  height: 22px;
+  padding: 0 8px;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  cursor: pointer;
+}
+
+.rs-menu__title:hover,
+.rs-menu__title[aria-expanded='true'] {
+  background: var(--surface);
+}
+
+.rs-menu__list {
+  position: absolute;
+  top: 24px;
+  left: 0;
+  z-index: 30;
+  min-width: 220px;
+  margin: 0;
+  padding: var(--space-1) 0;
+  list-style: none;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: 0 8px 24px rgb(17 24 39 / 12%);
+}
+
+.rs-menu__list--right {
+  left: auto;
+  right: 0;
+}
+
+.rs-menu__item {
+  display: flex;
+  width: 100%;
+  height: 26px;
+  align-items: center;
+  padding: 0 var(--space-3);
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rs-menu__item:hover:not(:disabled) {
+  background: var(--surface-subtle);
+}
+
+.rs-menu__item:disabled {
+  color: var(--text-secondary);
+  cursor: default;
+}
+
+/* ---------- 側欄 ---------- */
+.rs-sidebar__search {
+  padding: 0 var(--space-2) var(--space-2);
+}
+
+/* ---------- 樹 ---------- */
+.rs-tree {
+  display: flex;
+  flex-direction: column;
+}
+
+.rs-tree__row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: var(--density-tree-row);
+  padding-right: var(--space-2);
+  cursor: default;
+  overflow: hidden;
+}
+
+/* v1.3 regression 修：單行列內 圖示不可 shrink、名稱保底 88px、IP 小字完整優先 */
+.rs-tree__row svg {
+  flex: none;
+}
+
+.rs-tree__row:hover {
+  background: var(--surface-subtle);
+}
+
+.rs-tree__row.is-selected {
+  background: var(--surface-subtle);
+  box-shadow: inset 2px 0 0 var(--primary);
+}
+
+.rs-tree__twisty {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.rs-tree__label {
+  flex: 0 1 auto;
+  min-width: 88px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs-tree__secondary {
+  flex: 0 0 auto;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+.rs-dot {
+  display: inline-block;
+  flex: none;
+  width: 8px;
+  height: 8px;
+  margin-right: 4px;
+  border-radius: 50%;
+  border: 1px solid var(--text-secondary);
+  background: transparent;
+}
+
+.rs-dot--connected {
+  border-color: var(--success);
+  background: var(--success);
+}
+
+.rs-dot--connecting {
+  border-color: var(--warning);
+  background: var(--warning);
+}
+
+.rs-dot--failed {
+  border-color: var(--danger);
+  background: var(--danger);
+}
+
+.rs-dot--idle {
+  border-color: var(--text-secondary);
+  background: transparent;
+}
+
+/* ---------- 表格 ---------- */
+.rs-table__wrap {
+  overflow: auto;
+}
+
+.rs-table {
+  width: 100%;
+  border-collapse: collapse;
+  table-layout: fixed;
+}
+
+.rs-table th {
+  position: sticky;
+  top: 0;
+  height: var(--density-table-row);
+  color: var(--text-secondary);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+}
+
+.rs-table td {
+  height: var(--density-table-row);
+  border-bottom: 1px solid var(--border);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs-table tr.is-selected td {
+  background: var(--surface-subtle);
+}
+
+.rs-tree__jump {
+  flex: none;
+  display: inline-block;
+  vertical-align: middle;
+  margin-left: var(--space-1);
+  color: var(--jump);
+}
+
+/* ---------- Modal ---------- */
+.rs-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgb(17 24 39 / 40%);
+}
+
+.rs-modal__dialog {
+  display: flex;
+  flex-direction: column;
+  max-height: 80vh;
+  border-radius: var(--radius-panel);
+  background: var(--surface);
+  box-shadow: 0 16px 48px rgb(17 24 39 / 24%);
+}
+
+.rs-modal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  border-bottom: 1px solid var(--border);
+}
+
+.rs-modal__header h2 {
+  margin: 0;
+  font-size: 14px;
+}
+
+.rs-modal__body {
+  flex: 1 1 auto;
+  min-height: 0;
+  padding: var(--space-4);
+  overflow: auto;
+}
+
+.rs-modal__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-2);
+  padding: var(--space-3) var(--space-4);
+  border-top: 1px solid var(--border);
+}
+
+/* ---------- Toast ---------- */
+.rs-toasts {
+  position: fixed;
+  right: var(--space-4);
+  bottom: 40px;
+  z-index: 60;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.rs-toast {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-width: 220px;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--border);
+  border-left: 3px solid var(--primary);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  box-shadow: 0 6px 18px rgb(17 24 39 / 16%);
+}
+
+.rs-toast--success {
+  border-left-color: var(--success);
+}
+
+.rs-toast--warning {
+  border-left-color: var(--warning);
+}
+
+.rs-toast--error {
+  border-left-color: var(--danger);
+}
+
+/* ---------- 分頁（M2-04） ---------- */
+.rs-tabs__spacer {
+  flex: 1;
+}
+
+/* FAIL-4：分頁列 [＋] 新快速連線 */
+.rs-tabs__add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  align-self: center;
+  width: 22px;
+  height: 22px;
+  margin: 0 var(--space-2);
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.rs-tabs__add:hover {
+  background: var(--surface-subtle);
+  color: var(--text);
+}
+
+.rs-tab {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  height: 24px;
+  padding: 0 var(--space-2);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+  max-width: 220px;
+}
+
+.rs-tab:hover {
+  background: var(--surface);
+}
+
+.rs-tab.is-active {
+  background: var(--surface);
+  box-shadow: inset 0 -2px 0 var(--primary);
+}
+
+.rs-tab__title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.rs-tab__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+
+.rs-tab__close:hover {
+  background: var(--surface-subtle);
+  color: var(--text);
+}
+
+/* ---------- 狀態列（M2-08） ---------- */
+.rs-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  white-space: nowrap;
+}
+
+.rs-status.is-error {
+  color: var(--danger);
+}
+
+.rs-link {
+  border: 0;
+  background: transparent;
+  color: var(--primary);
+  cursor: pointer;
+  text-decoration: underline;
+  padding: 0;
+}
+
+/* ---------- 對話框輔助（M2-08） ---------- */
+.rs-kv {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 6px var(--space-3);
+  margin: var(--space-3) 0 0;
+}
+
+.rs-kv dt {
+  color: var(--text-secondary);
+}
+
+.rs-kv dd {
+  margin: 0;
+  overflow-wrap: anywhere;
+}
+
+.rs-mono {
+  font-family: var(--font-terminal);
+  font-size: 12px;
+}
+
+.rs-muted {
+  color: var(--text-secondary);
+  margin: 0 0 var(--space-2);
+}
+
+.rs-hint {
+  color: var(--text-secondary);
+  margin: var(--space-2) 0 0;
+  font-size: 11px;
+}
+
+.rs-danger {
+  color: var(--danger);
+  margin: 0;
+}
+
+/* ---------- SFTP 雙面板（M3-05 / UI-03） ---------- */
+.rs-sftp__view {
+  position: absolute;
+  inset: 0;
+  z-index: 5;
+  background: var(--surface);
+  /* v0.1.4 #6：本 view 掛在 .rs-terminal 內，會繼承 --terminal-fg (#C9D1D9)，
+     白底下只有 1.54:1（檔名列淺灰看不清）。呼叫端補回 --text（token 不動），
+     面板背景 --surface 與 hover/選取背景 --surface-subtle 皆 ≥4.5:1。 */
+  color: var(--text);
+}
+.rs-sftp {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+.rs-sftp__toolbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--density-toolbar);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+.rs-sftp__panes {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+.rs-sftp__pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+  min-height: 0;
+}
+.rs-sftp__resizer {
+  flex: 0 0 6px;
+}
+.rs-sftp__panehead {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  height: var(--density-table-row);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-subtle);
+  font-weight: 600;
+}
+.rs-sftp__panehead h3 {
+  flex: 1;
+  margin: 0;
+  font-size: 12px;
+}
+.rs-sftp__pathbar {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: var(--density-statusbar);
+  padding: 0 var(--space-2);
+  border-bottom: 1px solid var(--border);
+}
+.rs-sftp__history {
+  width: 24px;
+  height: 22px;
+  padding: 0 2px;
+  color: transparent;
+}
+.rs-sftp__crumbs {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  overflow: hidden;
+  white-space: nowrap;
+  flex: 1;
+  min-width: 0;
+  cursor: text;
+}
+.rs-sftp__crumb-slice {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--text-secondary);
+}
+.rs-sftp__crumb {
+  border: 0;
+  padding: 2px 4px;
+  border-radius: var(--radius-control);
+  background: transparent;
+  cursor: pointer;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  max-width: 180px;
+}
+.rs-sftp__crumb:hover {
+  background: var(--surface-subtle);
+}
+.rs-sftp__input {
+  flex: 1;
+  height: 22px;
+}
+.rs-sftp__dropzone {
+  position: relative;
+  flex: 1;
+  overflow: auto;
+  min-height: 0;
+}
+.rs-sftp__dropzone.is-dragover {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+  background: var(--surface-subtle);
+}
+.rs-sftp__drophint {
+  position: absolute;
+  left: 50%;
+  top: var(--space-3);
+  transform: translateX(-50%);
+  z-index: 2;
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-control);
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: 0 6px 18px rgb(17 24 39 / 16%);
+}
+.rs-sftp__table {
+  min-width: 340px;
+}
+/* v0.1.4 #7／UI-03 v1.2：SFTP 檔案列表無任何框線（僅此作用域；佇列表維持列線）。
+   留白＋hover／選取底色；列高 28px、左右 padding 8px（相鄰欄 16px）。 */
+.rs-sftp__table th {
+  padding: 0 var(--space-2);
+  height: var(--density-table-row);
+}
+
+.rs-sftp__table td {
+  padding: 0 var(--space-2);
+  height: var(--density-table-row);
+  border-bottom: 0;
+}
+
+.rs-sftp__table thead th {
+  border-bottom: 0;
+  /* v0.1.9 #2：header 不可透明，捲動時資料列會穿透；sticky＋不透明底色＋陰影（不加框線） */
+  background: var(--surface);
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.35);
+}
+
+.rs-sftp__table th + th {
+  border-left: 0;
+}
+
+.rs-sftp__table td + td {
+  border-left: 0;
+}
+
+.rs-sftp__table tbody tr:hover td {
+  background: var(--surface-subtle);
+}
+
+.rs-sftp__table tbody tr.is-selected td {
+  background: var(--row-selected);
+}
+
+.rs-sftp__table tbody tr:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.rs-sftp__table tbody tr.is-drop-target td {
+  background: var(--row-selected);
+}
+
+.rs-sftp__table tbody tr.is-drop-target {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+
+.rs-sftp__mode {
+  font-family: var(--font-terminal);
+  font-size: 11px;
+}
+.rs-sftp__sort {
+  all: unset;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  font-weight: 600;
+}
+/* v0.1.4 #8：表頭欄寬拖曳把手（貼欄右緣；拖曳調寬、方向鍵微調、雙擊重設）。
+   th 是 position: sticky → 絕對定位錨點；把手完全在本欄內，不會被下一欄背景蓋掉 */
+.rs-sftp__colresizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 9px;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: col-resize;
+}
+.rs-sftp__colresizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2px;
+  background: transparent;
+}
+.rs-sftp__colresizer:hover::after,
+.rs-sftp__colresizer:focus-visible::after {
+  background: var(--primary);
+}
+.rs-sftp__colresizer:focus-visible {
+  outline: 2px solid var(--primary);
+  outline-offset: -2px;
+}
+.rs-sftp__name {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  overflow: hidden;
+  /* v0.1.4 #6：檔名列用色鎖在呼叫端（即使外層再被別的容器覆寫也不會變淺灰） */
+  color: var(--text);
+}
+.rs-sftp__icon {
+  display: inline-flex;
+  width: 16px;
+  color: var(--warning);
+  flex: 0 0 auto;
+}
+.rs-sftp__status {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  min-height: var(--density-statusbar);
+  padding: 0 var(--space-3);
+  border-top: 1px solid var(--border);
+  background: var(--surface-subtle);
+  color: var(--text-secondary);
+}
+.rs-sftp__status-spacer {
+  flex: 1;
+}
+.rs-sftp__mask {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+}
+.rs-sftp__ctxmenu {
+  position: fixed;
+  z-index: 45;
+  min-width: 160px;
+}
+/* 磁碟機切換（路徑列下拉，localFs.list 的 drives） */
+.rs-sftp__drives {
+  width: auto;
+  min-width: 56px;
+  height: 22px;
+  padding: 0 2px;
+  font-family: var(--font-terminal);
+  font-size: 11px;
+}
+
+/* ---------- 衝突對話框 footer（M3-06） ---------- */
+.rs-conflict__footer {
+  justify-content: flex-end;
+}
+.rs-conflict__counter {
+  color: var(--text-secondary);
+  margin-right: auto;
+}
+
+/* ---------- 傳輸佇列（M3-07 / UI-04） ---------- */
+.rs-queue__toggle {
+  all: unset;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 600;
+}
+.rs-queue__twisty.is-collapsed {
+  transform: rotate(0deg);
+}
+.rs-queue__speed {
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+.rs-queue__head-actions {
+  margin-left: auto;
+  display: flex;
+  gap: var(--space-3);
+}
+.rs-queue__resizer {
+  height: 4px;
+  cursor: row-resize;
+  background: transparent;
+}
+.rs-queue__resizer:hover {
+  background: var(--primary);
+  opacity: 0.35;
+}
+.rs-queue__body {
+  overflow: hidden;
+}
+.rs-queue__table td:nth-child(2),
+.rs-queue__table td:nth-child(3) {
+  font-family: var(--font-terminal);
+  font-size: 11px;
+  color: var(--text-secondary);
+}
+.rs-queue__dir.is-upload {
+  color: var(--success);
+}
+.rs-queue__dir.is-download {
+  color: var(--primary);
+}
+.rs-queue__progress {
+  min-width: 120px;
+}
+.rs-queue__bar {
+  display: inline-block;
+  vertical-align: middle;
+  width: 80px;
+  height: 8px;
+  margin-right: var(--space-1);
+  border-radius: var(--radius-control);
+  background: var(--surface-subtle);
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+.rs-queue__barfill {
+  display: block;
+  height: 100%;
+  background: var(--primary);
+}
+.rs-queue__barnum {
+  font-family: var(--font-terminal);
+  font-size: 11px;
+}
+.rs-queue__status, .rs-queue__table td[class]:nth-child(7) { }
+.rs-queue__table td.is-queued { color: var(--text-secondary); }
+.rs-queue__table td.is-running { color: var(--primary); }
+.rs-queue__table td.is-paused { color: var(--warning); }
+.rs-queue__table td.is-completed { color: var(--success); }
+.rs-queue__table td.is-failed { color: var(--danger); }
+.rs-queue__table td.is-cancelled { color: var(--text-secondary); }
+.rs-queue__err {
+  display: flex;
+  gap: var(--space-2);
+  align-items: center;
+  font-weight: 400;
+}
+.rs-queue__actions button {
+  border: 0;
+  padding: 2px 6px;
+  border-radius: var(--radius-control);
+  background: transparent;
+  cursor: pointer;
+  color: var(--primary);
+}
+.rs-queue__actions button:hover {
+  background: var(--surface-subtle);
+}
+.rs-queue__conn {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+
+/* 契約 v1.11：目錄父列展開 / 子列 / 需重傳 / 斷線橫幅 */
+.rs-queue__expand {
+  border: 0;
+  padding: 0 4px 0 0;
+  background: transparent;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.rs-queue__child td {
+  color: var(--text-secondary);
+  font-size: 11px;
+}
+.rs-queue__child td:nth-child(2),
+.rs-queue__child td:nth-child(3) {
+  padding-left: var(--space-4);
+}
+.rs-queue__retransfer {
+  display: inline-flex;
+  margin-left: var(--space-2);
+  padding: 0 4px;
+  border-radius: var(--radius-control);
+  border: 1px solid var(--warning);
+  color: var(--warning);
+  font-size: 10px;
+  font-weight: 600;
+}
+.rs-queue__interrupted {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: 0;
+  padding: var(--space-1) var(--space-3);
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  color: var(--warning);
+}
+
+/* ---------- 設定對話框（M4-02 / UI-05） ---------- */
+.rs-settings {
+  display: flex;
+  gap: var(--space-4);
+  /* FAIL-2 修正：高度改吃 modal body（對話框精準 720x520），內容由 __content 內部捲動 */
+  height: 100%;
+}
+.rs-settings__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  flex: 0 0 140px;
+  border-right: 1px solid var(--border);
+  padding-right: var(--space-2);
+}
+.rs-settings__navitem {
+  border: 0;
+  border-radius: var(--radius-control);
+  background: transparent;
+  text-align: left;
+  padding: var(--space-2) var(--space-3);
+  cursor: pointer;
+}
+.rs-settings__navitem:hover {
+  background: var(--surface-subtle);
+}
+.rs-settings__navitem.is-active {
+  background: var(--surface-subtle);
+  box-shadow: inset 2px 0 0 var(--primary);
+  font-weight: 600;
+}
+.rs-settings__content {
+  flex: 1;
+  overflow: auto;
+  min-width: 0;
+}
+.rs-settings__pane {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+.rs-settings__row {
+  display: flex;
+  align-items: flex-end;
+  gap: var(--space-2);
+}
+.rs-settings__row .rs-field {
+  flex: 1;
+}
+.rs-settings__radios {
+  display: flex;
+  gap: var(--space-2);
+}
+.rs-settings__card {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  cursor: pointer;
+}
+.rs-settings__card.is-selected {
+  border-color: var(--primary);
+  box-shadow: inset 0 0 0 1px var(--primary);
+}
+.rs-settings__card input {
+  accent-color: var(--primary);
+}
+
+/* 關於頁 Logo（UI-06 Prompt Tunnel，inline SVG 不連網） */
+.rs-about__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--space-3);
+  margin-bottom: var(--space-2);
+}
+.rs-about__logo {
+  width: 44px;
+  height: 44px;
+  flex: none;
+}
+/* UI-06-LOGO 固定 artwork 色票（品牌漸層與節點色，非 tokens 控制項色） */
+.rs-about__logo .rs-logo__stop-a {
+  stop-color: #2563eb;
+}
+.rs-about__logo .rs-logo__stop-b {
+  stop-color: #0e7490;
+}
+.rs-about__logo .rs-logo__tile {
+  fill: url(#rs-logo-tile);
+}
+.rs-about__logo .rs-logo__prompt {
+  stroke: #ffffff;
+  stroke-width: 11;
+}
+.rs-about__logo .rs-logo__link {
+  stroke: #ffffff;
+  stroke-width: 6;
+  opacity: 0.9;
+}
+.rs-about__logo .rs-logo__dot {
+  fill: #ffffff;
+}
+.rs-about__logo .rs-logo__dot--end {
+  fill: #22c55e;
+}
+.rs-about__name {
+  font-size: 16px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+/* ---------- M4-06 例外邊界（renderer 崩潰時的可回報畫面） ---------- */
+.rs-crash {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  height: 100%;
+  padding: var(--space-5);
+  overflow: auto;
+  background: var(--surface);
+  color: var(--text);
+  user-select: text;
+}
+.rs-crash__title {
+  margin: 0;
+  font-size: 16px;
+  color: var(--danger);
+}
+.rs-crash__code {
+  margin: 0;
+  font-family: var(--font-terminal);
+  font-size: 18px;
+  font-weight: 600;
+  letter-spacing: 1px;
+}
+.rs-crash__message {
+  margin: 0;
+  color: var(--text-secondary);
+}
+.rs-crash__stack {
+  flex: 1;
+  min-height: 120px;
+  margin: 0;
+  padding: var(--space-3);
+  overflow: auto;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  background: var(--surface-subtle);
+  font-family: var(--font-terminal);
+  font-size: 11px;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+.rs-crash__actions {
+  display: flex;
+  gap: var(--space-2);
+}

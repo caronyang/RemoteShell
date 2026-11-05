@@ -1,0 +1,65 @@
+/* RemoteShell design tokens.
+   Source: docs/design/README.md §設計語言 (Design Tokens)
+   Source: docs/技術實作文件_v1.0.md §1.1 (src/renderer/styles/tokens.css)
+   Do not introduce colour values outside this file. */
+
+:root {
+  /* Colours — names and values must match design README exactly */
+  --primary: #2563EB;
+  --primary-hover: #1D4ED8;
+  --success: #16A34A;
+  --warning: #D97706;
+  --danger: #DC2626;
+  --text: #111827;
+  --text-secondary: #68707C;
+  --border: #D1D5DB;
+  --surface: #FFFFFF;
+  --surface-subtle: #F3F4F6;
+  /* v0.1.4 #7：SFTP 檔案列表選取列底色（使用者 2026-11-02 裁定：列表無框線，靠底色表達）
+     對比：--text on #DBEAFE = 10.6:1 */
+  --row-selected: #DBEAFE;
+  --terminal-bg: #0D1117;
+  --terminal-fg: #C9D1D9;
+  --jump: #0891B2;
+
+  /* Fonts */
+  --font-ui: "Segoe UI", "Microsoft JhengHei", sans-serif;
+  --font-terminal: "Cascadia Mono", Consolas, monospace;
+
+  /* Typography sizes (pt -> px approx; design spec) */
+  --font-ui-size: 12px;
+  --font-terminal-size: 11pt;
+
+  /* Spacing (base 4): 4 / 8 / 12 / 16 / 24 */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+
+  /* Radius */
+  --radius-control: 4px;
+  --radius-panel: 8px;
+
+  /* Density */
+  --density-toolbar: 40px;
+  --density-tab: 32px;
+  --density-tree-row: 26px;
+  --density-table-row: 28px;
+  --density-statusbar: 28px;
+  --density-menubar: 26px;
+
+  /* Window */
+  --window-min-width: 1024px;
+  --window-min-height: 680px;
+  --window-default-width: 1280px;
+  --window-default-height: 800px;
+
+  /* Sidebar / queue */
+  --sidebar-width: 260px;
+  --sidebar-min: 200px;
+  --sidebar-max: 480px;
+  --queue-height: 160px;
+  --queue-collapsed: 28px;
+  --queue-max: 500px;
+}

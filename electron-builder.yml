@@ -1,0 +1,29 @@
+appId: com.remoteshell.app
+productName: RemoteShell
+copyright: Copyright © 2026 RemoteShell
+directories:
+  output: build
+  buildResources: build
+files:
+  - dist/**/*
+  - package.json
+  - '!**/*.map'
+asar: true
+# M4-04／M5-01：OFL 授權要求字型授權條文隨著作散布；字型本身在 dist/renderer/assets，
+# 授權全文放在 resources/licenses（安裝後可見、也隨解除安裝移除）。
+extraResources:
+  - from: build/fonts/OFL-CascadiaMono.txt
+    to: licenses/OFL-CascadiaMono.txt
+  - from: build/fonts/OFL-NotoSansMonoCJK.txt
+    to: licenses/OFL-NotoSansMonoCJK.txt
+  # 打包後視窗／工作列圖示（與安裝檔、exe 共用同一份）
+  - from: build/icon.ico
+    to: icon.ico
+win:
+  target:
+    - dir
+  icon: build/icon.ico
+  # 本機／CI 的 Windows 不允許建立 symlink 時，electron-builder 會卡在解壓 winCodeSign（內含 macOS symlink）。
+  # 我們自己用 rcedit 事後寫入圖示與版本資訊（scripts/patch-exe.mjs），行為一樣、且可重跑。
+  # 簽章本來就沒有憑證，這裡一併關閉。
+  signAndEditExecutable: false
