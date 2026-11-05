@@ -2,6 +2,8 @@
 
 A Windows desktop remote terminal application, comparable to Xshell. Supports SSH v2 and Telnet, SFTP file transfer, jump hosts, and a multilingual UI (English / Traditional Chinese).
 
+> **Jump-host direct connect** — define a bastion once in your connection list, then connect straight to internal hosts behind it (`1.2.3.4 → 10.1.2.11`) as if they were on your LAN. The status bar pinpoints which stage failed (jump DNS / jump TCP / jump auth / tunnel / target TCP / target auth), so you know where to fix.
+
 ![RemoteShell — 10 hosts connected in the connection list](assets/screenshot-connected-10-hosts.png)
 
 ## Features
