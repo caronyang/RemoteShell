@@ -19,7 +19,7 @@ import { SettingsDialog, type SettingsPaneId } from '../settings/SettingsDialog'
 import type { QueueAction } from '../queue/QueueRow'
 import { QueuePanel } from '../queue/QueuePanel'
 import { useSessions, type SessionOpenError } from '../terminal/useSessions'
-import { neighborAfterClose } from '../terminal/tabNeighbor'
+import { focusAfterClose } from '../terminal/tabFocus'
 import { resolveTerminalSettings } from '../terminal/resolveTerminalSettings'
 import { NewGroupDialog } from './NewGroupDialog'
 import { TitleBar } from './TitleBar'
@@ -407,20 +407,32 @@ export function MainWindow({ settings, info, onPatch }: MainWindowProps): JSX.El
     [setActiveId]
   )
 
-  const closeSftpTab = useCallback((sessionId: string): void => {
-    const sftpIds = sftpSessionIds
-    setSftpSessionIds((prev) => prev.filter((id) => id !== sessionId))
-    if (sftpViewId !== sessionId) return
-    /* v0.1.10 #3：同類型（SFTP）相鄰優先，沒有才回終端相鄰；最後一個才回空狀態 */
-    const sftpNext = neighborAfterClose(sftpIds, sessionId, sessionId)
-    if (sftpNext) {
-      setSftpViewId(sftpNext)
-      return
-    }
-    const terminalIds = sessions.map((session) => session.sessionId)
-    setSftpViewId(null)
-    setActiveId(neighborAfterClose(terminalIds, sessionId, sessionId))
-  }, [sftpSessionIds, sftpViewId, sessions, setActiveId])
+  const closeTab = useCallback(
+    (kind: 'terminal' | 'sftp', sessionId: string): void => {
+      const terminals = sessions.map((session) => session.sessionId)
+      const sftp = sftpSessionIds.filter((id) => terminals.includes(id))
+      const next = focusAfterClose({ terminals, sftp }, { sessionId, kind }, { activeId, sftpViewId })
+      setSftpSessionIds((prev) => prev.filter((id) => id !== sessionId))
+      setSftpViewId(next.sftpViewId)
+      setActiveId(next.activeId)
+      if (kind === 'terminal') void close(sessionId, next.activeId)
+    },
+    [activeId, close, sessions, sftpSessionIds, sftpViewId, setActiveId]
+  )
+
+  const closeSftpTab = useCallback((sessionId: string): void => closeTab('sftp', sessionId), [closeTab])
+
+  /* v0.1.11 #1 防護：sftpViewId 指向已不存在的 session（例如終端被其他地方關掉）→ 清掉並聚焦第一個存活分頁 */
+  useEffect(() => {
+    if (sftpViewId === null) return
+    const terminals = sessions.map((session) => session.sessionId)
+    if (terminals.includes(sftpViewId)) return
+    const sftp = sftpSessionIds.filter((id) => terminals.includes(id) && id !== sftpViewId)
+    const next = focusAfterClose({ terminals, sftp }, { sessionId: sftpViewId, kind: 'sftp' }, { activeId, sftpViewId })
+    setSftpSessionIds((prev) => prev.filter((id) => id !== sftpViewId))
+    setSftpViewId(next.sftpViewId)
+    setActiveId(next.activeId)
+  }, [activeId, sessions, sftpSessionIds, sftpViewId, setActiveId])
 
   const canOpenSftp = active !== null && active.protocol === 'ssh' && active.state === 'connected'
   const toggleSftp = useCallback((): void => {
@@ -523,7 +535,7 @@ export function MainWindow({ settings, info, onPatch }: MainWindowProps): JSX.El
         canReconnect={active?.state === 'disconnected' || active?.state === 'failed'}
         canSftp={canOpenSftp}
         onSftp={toggleSftp}
-        onDisconnect={() => (active ? void close(active.sessionId) : undefined)}
+        onDisconnect={() => (active ? closeTab('terminal', active.sessionId) : undefined)}
         onReconnect={() => (active ? void reconnect(active.sessionId) : undefined)}
         onQuickConnect={() => openNewConnection(null)}
         onNewConnection={() => openNewConnection(null)}
@@ -556,8 +568,7 @@ export function MainWindow({ settings, info, onPatch }: MainWindowProps): JSX.El
             terminalSettingsFor={terminalSettingsFor}
             onSelect={switchToTerminal}
             onClose={(sessionId) => {
-              closeSftpTab(sessionId)
-              void close(sessionId)
+              closeTab('terminal', sessionId)
             }}
             onSelectSftp={openSftp}
             onCloseSftp={closeSftpTab}

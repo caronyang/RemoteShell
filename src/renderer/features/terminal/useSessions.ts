@@ -19,7 +19,7 @@ export interface UseSessionsResult {
   activeId: string | null
   setActiveId: (id: string | null) => void
   open: (profileId: string, opts?: { secret?: string; cols?: number; rows?: number; params?: Record<string, unknown> }) => Promise<SessionInfo | null>
-  close: (sessionId: string) => Promise<void>
+  close: (sessionId: string, nextActiveId?: string | null) => Promise<void>
   reconnect: (sessionId: string) => Promise<void>
   active: SessionInfo | null
   /** M4-07：重連因 vault/auth 失敗時要求補輸入憑證（null = 不需） */
@@ -109,11 +109,11 @@ export function useSessions(): UseSessionsResult {
     []
   )
 
-  const close = useCallback(async (sessionId: string) => {
+  const close = useCallback(async (sessionId: string, nextActiveId?: string | null) => {
     const ids = sessionsRef.current.map((session) => session.sessionId)
     await window.rs.session.close(sessionId)
     setSessions((prev) => prev.filter((session) => session.sessionId !== sessionId))
-    setActiveId((current) => neighborAfterClose(ids, sessionId, current))
+    setActiveId((current) => (nextActiveId !== undefined ? nextActiveId : neighborAfterClose(ids, sessionId, current)))
   }, [])
 
   const reconnect = useCallback(async (sessionId: string) => {

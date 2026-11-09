@@ -12,6 +12,7 @@ import { baseName, formatSize, formatMtime } from './format'
 import { DRAG_MIME, FileTable, type DragPayload, type SortKey, type SortState } from './FileTable'
 import { PathBar } from './PathBar'
 import { SftpToolbar } from './Toolbar'
+import { useTransferRefresh } from './useTransferRefresh'
 
 export interface DualPaneProps {
   session: SessionInfo
@@ -51,6 +52,23 @@ const isHiddenRemote = (name: string): boolean => name.startsWith('.')
  *  送 source 單鍵後端查不到 → ask → 全部 skip（QA T05d-1/2 的根因）。 */
 const decisionKey = (item: { source: string; target: string }): string => `${item.source}→${item.target}`
 
+/** v0.1.11 #3／#4：只在 preload 真的有 transfer.onUpdate 時掛訂閱（舊測試 mock 沒有時不影響 DualPane）。 */
+function TransferRefreshBridge(props: {
+  sessionId: string
+  localPath: string
+  remotePath: string
+  onRefreshLocal: () => void
+  onRefreshRemote: () => void
+}): null {
+  useTransferRefresh(props.sessionId, {
+    localPath: props.localPath,
+    remotePath: props.remotePath,
+    onRefreshLocal: props.onRefreshLocal,
+    onRefreshRemote: props.onRefreshRemote
+  })
+  return null
+}
+
 /** M3-05 SFTP dual pane (UI-03): symmetric panels, resizable, drag-and-drop transfer */
 export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
   const { t } = useTranslation()
@@ -75,6 +93,7 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
   const [mkdirPane, setMkdirPane] = useState<'local' | 'remote' | null>(null)
   const [nameDraft, setNameDraft] = useState('')
   const [menu, setMenu] = useState<{ x: number; y: number; pane: 'local' | 'remote'; entry: SftpEntry | null } | null>(null)
+  const [clipboard, setClipboard] = useState<{ pane: 'local' | 'remote'; names: string[]; dir: string } | null>(null)
   const [properties, setProperties] = useState<{ entry: SftpEntry } | null>(null)
   const [errorPath, setErrorPath] = useState<string | null>(null)
 
@@ -167,6 +186,21 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
     })()
   }, [listLocal])
 
+  /* v0.1.11 #2：刷新路由 —— 每個路徑只打一側，禁止同時 local+remote */
+  const refreshPane = useCallback(
+    (pane: 'local' | 'remote'): void => {
+      if (pane === 'local') {
+        void listLocal(local.path, false)
+        return
+      }
+      if (sftpId) void listRemote(sftpId, remote.path, false)
+    },
+    [listLocal, local.path, listRemote, remote.path, sftpId]
+  )
+
+  /* v0.1.11 #3／#4：傳輸完成事件只刷新目標側（B 提供的 hook；舊測試 mock 無 onUpdate 時跳過） */
+  const hasTransferUpdates = typeof window.rs?.transfer?.onUpdate === 'function'
+
   const canTransfer = sftpId !== null && session.protocol === 'ssh' && session.state === 'connected'
 
   const visibleLocal = useMemo(
@@ -240,12 +274,12 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
   )
 
   const beginTransfer = useCallback(
-    async (direction: 'upload' | 'download', names: string[], targetDir: string): Promise<void> => {
+    async (direction: 'upload' | 'download', names: string[], targetDir: string, sourceDir?: string): Promise<void> => {
       if (!canTransfer || names.length === 0) return
       const request: TransferPlanItem[] = names.map((name) =>
         direction === 'upload'
-          ? { source: joinLocal(local.path, name), target: joinRemote(targetDir, name), conflict: false }
-          : { source: joinRemote(remote.path, name), target: joinLocal(targetDir, name), conflict: false }
+          ? { source: joinLocal(sourceDir ?? local.path, name), target: joinRemote(targetDir, name), conflict: false }
+          : { source: joinRemote(sourceDir ?? remote.path, name), target: joinLocal(targetDir, name), conflict: false }
       )
       /* conflict detection is authoritative from the backend (transfer.plan) */
       const planned = await window.rs.transfer.plan(session.sessionId, direction, request)
@@ -449,6 +483,19 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
         }
       }}
     >
+      {hasTransferUpdates ? (
+        <TransferRefreshBridge
+          sessionId={session.sessionId}
+          localPath={local.path}
+          remotePath={remote.path}
+          onRefreshLocal={() => {
+            void listLocal(local.path, false)
+          }}
+          onRefreshRemote={() => {
+            if (sftpId) void listRemote(sftpId, remote.path, false)
+          }}
+        />
+      ) : null}
       <SftpToolbar
         hasLocalSelection={localSelected.size > 0}
         hasRemoteSelection={remoteSelected.size > 0}
@@ -470,7 +517,7 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
           }
         }}
         onDelete={() => deleteSelection(remoteSelected.size > 0 ? 'remote' : 'local')}
-        onRefresh={() => (sftpId ? void listRemote(sftpId, remote.path, false) : undefined)}
+        onRefresh={() => refreshPane(focusedPane)}
         onToggleHidden={() => setShowHidden(!showHidden)}
       />
       <div className="rs-sftp__panes">
@@ -478,10 +525,11 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
           <header className="rs-sftp__panehead">
             <Icon name="folder" size={14} />
             <h3>{t('sftp.pane.local')}</h3>
+            <Button variant="ghost" icon="reconnect" title={t('sftp.refresh.local')} aria-label={t('sftp.refresh.local')} onClick={() => refreshPane('local')} />
             <Button variant="ghost" icon="chevron-right" title={t('sftp.path.up')} aria-label={t('sftp.path.up')} onClick={() => navigateLocal(upOneLocal())} />
           </header>
           <PathBar kind="local" path={local.path} history={local.history} drives={drives} onNavigate={navigateLocal} />
-          <DropZone kind="local" dropHint={dragHint('local')} onDrop={(event) => handleDrop('local', event)}>
+          <DropZone kind="local" dropHint={dragHint('local')} onDrop={(event) => handleDrop('local', event)} onContextMenu={(event) => openMenu(event, 'local', null)}>
             {visibleLocal.length === 0 ? (
               <p className="rs-empty">{t('sftp.empty.folder')}</p>
             ) : (
@@ -507,6 +555,7 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
           <header className="rs-sftp__panehead">
             <Icon name="server" size={14} />
             <h3>{t('sftp.pane.remote')}</h3>
+            <Button variant="ghost" icon="reconnect" title={t('sftp.refresh.remote')} aria-label={t('sftp.refresh.remote')} disabled={!sftpId} onClick={() => refreshPane('remote')} />
             <Button
               variant="ghost"
               icon="chevron-right"
@@ -517,7 +566,7 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
             />
           </header>
           <PathBar kind="remote" path={remote.path} history={remote.history} onNavigate={navigateRemote} />
-          <DropZone kind="remote" dropHint={dragHint('remote')} onDrop={(event) => handleDrop('remote', event)}>
+          <DropZone kind="remote" dropHint={dragHint('remote')} onDrop={(event) => handleDrop('remote', event)} onContextMenu={(event) => openMenu(event, 'remote', null)}>
             {loading ? <p className="rs-empty">{t('common.loading')}</p> : null}
             {!loading && visibleRemote.length === 0 ? <p className="rs-empty">{t('sftp.empty.folder')}</p> : null}
             {!loading && visibleRemote.length > 0 ? (
@@ -548,14 +597,46 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
       {menu !== null ? <div className="rs-sftp__mask" onMouseDown={closeMenu} /> : null}
       {menu !== null ? (
         <div className="rs-menu__list rs-sftp__ctxmenu" style={{ left: menu.x, top: menu.y }} role="menu" aria-label={t('sftp.context.properties')}>
-          <button type="button" role="menuitem" className="rs-menu__item" disabled={menu.pane !== 'local' || localSelected.size === 0} onClick={() => { closeMenu(); void beginTransfer('upload', [...localSelected], remote.path) }}>
+          <button type="button" role="menuitem" className="rs-menu__item" disabled={menu.pane !== 'local' || !menu.entry || localSelected.size === 0} onClick={() => { closeMenu(); void beginTransfer('upload', [...localSelected], remote.path) }}>
             {t('sftp.context.upload')}
           </button>
-          <button type="button" role="menuitem" className="rs-menu__item" disabled={menu.pane !== 'remote' || remoteSelected.size === 0} onClick={() => { closeMenu(); void beginTransfer('download', [...remoteSelected], local.path) }}>
+          <button type="button" role="menuitem" className="rs-menu__item" disabled={menu.pane !== 'remote' || !menu.entry || remoteSelected.size === 0} onClick={() => { closeMenu(); void beginTransfer('download', [...remoteSelected], local.path) }}>
             {t('sftp.context.download')}
           </button>
           <button type="button" role="menuitem" className="rs-menu__item" onClick={() => { const pane = menu.pane; closeMenu(); setMkdirPane(pane); setNameDraft('') }}>
             {t('sftp.context.newFolder')}
+          </button>
+          {menu.entry === null ? (
+            <button
+              type="button"
+              role="menuitem"
+              className="rs-menu__item"
+              disabled={!clipboard || clipboard.pane === menu.pane || !canTransfer}
+              onClick={() => {
+                const source = clipboard
+                if (!source) return
+                const targetPane = menu.pane
+                closeMenu()
+                void beginTransfer(
+                  targetPane === 'remote' ? 'upload' : 'download',
+                  source.names,
+                  targetPane === 'remote' ? remote.path : local.path,
+                  source.dir
+                )
+              }}
+            >
+              {t('sftp.context.paste')}
+            </button>
+          ) : null}
+          <button type="button" role="menuitem" className="rs-menu__item" disabled={!menu.entry} onClick={() => {
+            const entry = menu.entry
+            if (!entry) return
+            const selected = menu.pane === 'local' ? localSelected : remoteSelected
+            const names = selected.size > 0 ? [...selected] : [entry.name]
+            setClipboard({ pane: menu.pane, names, dir: menu.pane === 'local' ? local.path : remote.path })
+            closeMenu()
+          }}>
+            {t('sftp.context.copy')}
           </button>
           <button type="button" role="menuitem" className="rs-menu__item" disabled={!menu.entry} onClick={() => { const entry = menu.entry; const pane = menu.pane; closeMenu(); if (entry) { setRenameTarget({ pane, entry }); setNameDraft(entry.name) } }}>
             {t('sftp.toolbar.rename')}
@@ -563,11 +644,14 @@ export function DualPane({ session, onClose }: DualPaneProps): JSX.Element {
           <button type="button" role="menuitem" className="rs-menu__item" disabled={!menu.entry} onClick={() => { const entry = menu.entry; closeMenu(); if (entry) void navigator.clipboard.writeText(entry.path) }}>
             {t('sftp.context.copyPath')}
           </button>
-          <button type="button" role="menuitem" className="rs-menu__item" onClick={() => { const pane = menu.pane; closeMenu(); deleteSelection(pane) }}>
+          <button type="button" role="menuitem" className="rs-menu__item" disabled={!menu.entry} onClick={() => { const pane = menu.pane; closeMenu(); deleteSelection(pane) }}>
             {t('sftp.toolbar.delete')}
           </button>
-          <button type="button" role="menuitem" className="rs-menu__item" onClick={() => { closeMenu(); if (sftpId) void listRemote(sftpId, remote.path, false) }}>
+          <button type="button" role="menuitem" className="rs-menu__item" onClick={() => { const pane = menu.pane; closeMenu(); refreshPane(pane) }}>
             {t('sftp.toolbar.refresh')}
+          </button>
+          <button type="button" role="menuitem" className="rs-menu__item" onClick={() => { closeMenu(); setShowHidden((v) => !v) }}>
+            {t('sftp.toolbar.showHidden')}
           </button>
           <button type="button" role="menuitem" className="rs-menu__item" disabled={!menu.entry} onClick={() => { const entry = menu.entry; closeMenu(); if (entry) setProperties({ entry }) }}>
             {t('sftp.context.properties')}

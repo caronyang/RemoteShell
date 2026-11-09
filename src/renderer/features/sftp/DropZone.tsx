@@ -1,4 +1,4 @@
-import { useState, type DragEvent } from 'react'
+import { useState, type DragEvent, type MouseEvent } from 'react'
 import { useTranslation } from 'react-i18next'
 import { DRAG_MIME } from './FileTable'
 
@@ -8,11 +8,13 @@ export interface DropZoneProps {
   /** 拖曳來源（跨面板）：來源 = 'local' 時表示目的在 remote */
   dropHint: string | null
   onDrop: (event: DragEvent<HTMLDivElement>) => void
+  /** v0.1.11 #5：容器級右鍵（列已 preventDefault 時不覆蓋） */
+  onContextMenu?: (event: MouseEvent<HTMLDivElement>) => void
   children: React.ReactNode
 }
 
 /** 檔案列表外包的拖放區（F-2 整區高亮藍框 + 浮標提示） */
-export function DropZone({ kind, dropHint, onDrop, children }: DropZoneProps): JSX.Element {
+export function DropZone({ kind, dropHint, onDrop, onContextMenu, children }: DropZoneProps): JSX.Element {
   const { t } = useTranslation()
   const [hover, setHover] = useState(false)
 
@@ -43,6 +45,10 @@ export function DropZone({ kind, dropHint, onDrop, children }: DropZoneProps): J
       onDragOver={onDragOver}
       onDragLeave={onDragLeave}
       onDrop={accept}
+      onContextMenu={(event) => {
+        if (event.defaultPrevented) return
+        onContextMenu?.(event)
+      }}
       onDragEnd={() => setHover(false)}
     >
       {children}
