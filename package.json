@@ -1,6 +1,6 @@
 {
   "name": "remoteshell",
-  "version": "0.1.11",
+  "version": "0.1.12",
   "private": true,
   "description": "RemoteShell - SSH/Telnet terminal with SFTP and jump host support",
   "author": "RemoteShell Team",

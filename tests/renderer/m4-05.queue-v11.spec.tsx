@@ -1,4 +1,6 @@
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { readFileSync } from 'node:fs'
+import path from 'node:path'
 import type { ReactNode } from 'react'
 import { cleanup, render, screen } from '@testing-library/react'
 import { fireEvent } from '@testing-library/dom'
@@ -19,6 +21,16 @@ const wrap = (ui: ReactNode): JSX.Element => (
     <ToastProvider>{ui}</ToastProvider>
   </I18nextProvider>
 )
+
+/** 讀取 base.css 指定選擇器的宣告區塊（避免 jsdom 無版面計算，無法驗證捲動） */
+const readRule = (selector: string): string => {
+  const css = readFileSync(path.join(process.cwd(), 'src', 'renderer', 'styles', 'base.css'), 'utf8').replace(/\s+/g, ' ')
+  const normalized = selector.replace(/\s+/g, ' ')
+  const escaped = normalized.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
+  const match = css.match(new RegExp(`${escaped}\\s*\\{([^}]*)\\}`))
+  if (!match || match[1] === undefined) throw new Error(`rule not found: ${selector}`)
+  return match[1]
+}
 
 /** 契約 v1.11 目錄任務：一列 + children（3 完成 / 5 檔） */
 const dirTask: TransferTask = {
@@ -62,6 +74,15 @@ function renderPanel(tasks: TransferTask[]): ReturnType<typeof render> {
 }
 
 describe('M4-05 契約 v1.11 目錄任務（一列 + children）', () => {
+  it('佇列內容區可捲動（多檔時仍能看到下方狀態列）', () => {
+    // 外層固定高度且 overflow:hidden；內層必須撐滿剩餘高度並 overflow:auto 才會出現滑桿
+    expect(readRule('.rs-queue__body')).toContain('display: flex')
+    const scroll = readRule('.rs-queue__body > .rs-table__wrap')
+    expect(scroll).toContain('flex: 1 1 auto')
+    expect(scroll).toContain('min-height: 0')
+    expect(scroll).toContain('overflow: auto')
+  })
+
   it('父列顯示彙總進度（百分比 + 已完成/總檔數），子列預設隱藏', () => {
     renderPanel([dirTask])
     // 42% · 3/5（transferredBytes/totalBytes=42%，3 個 completed）

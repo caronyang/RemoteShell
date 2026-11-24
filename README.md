@@ -11,7 +11,7 @@ A Windows desktop remote terminal application, comparable to Xshell. Supports SS
 - SSH v2 and Telnet connections
 - Connection list with groups, search, and tags
 - Single-hop jump host (bastion) support
-- SFTP dual-pane file transfer with drag-and-drop and a transfer queue (pause/resume/retry)
+- SFTP dual-pane file transfer with drag-and-drop and a scrollable transfer queue (pause/resume/retry)
 - Multiple terminal tabs with ANSI 16/256 color and CJK/UTF-8
 - English / Traditional Chinese, switched instantly without restart
 

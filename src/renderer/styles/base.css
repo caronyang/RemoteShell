@@ -296,7 +296,11 @@ select {
   /* FAIL-1 修正：flex:1（basis 0）會吃掉 inline height，展開高度以設定值為準 */
   flex: none;
   min-height: 0;
-  overflow: auto;
+  display: flex;
+  flex-direction: column;
+  /* 高度由 inline style 決定；內容超出時交給內層 .rs-table__wrap 捲動，
+     避免 overflow:hidden 直接裁掉下方列而看不到狀態 */
+  overflow: hidden;
   padding: var(--space-2);
   color: var(--text-secondary);
 }
@@ -1151,8 +1155,33 @@ select {
   background: var(--primary);
   opacity: 0.35;
 }
-.rs-queue__body {
-  overflow: hidden;
+.rs-queue__body > .rs-table__wrap {
+  /* 佇列內容超出面板高度時 vertical/horizontal 捲動；min-height:0 讓 flex 子項可縮小，
+     否則 overflow:auto 不會生效（多檔時看不到下方狀態列） */
+  flex: 1 1 auto;
+  min-height: 0;
+  min-width: 0;
+  overflow: auto;
+  /* 明確繪製滑桿（Electron/Chromium 預設 overlay 滑桿平時可能看不見） */
+  scrollbar-width: thin;
+  scrollbar-color: var(--text-secondary) transparent;
+}
+.rs-queue__body > .rs-table__wrap::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+.rs-queue__body > .rs-table__wrap::-webkit-scrollbar-track {
+  background: transparent;
+}
+.rs-queue__body > .rs-table__wrap::-webkit-scrollbar-thumb {
+  border: 2px solid transparent;
+  border-radius: var(--radius-control);
+  background: var(--border);
+  background-clip: padding-box;
+}
+.rs-queue__body > .rs-table__wrap::-webkit-scrollbar-thumb:hover {
+  background: var(--text-secondary);
+  background-clip: padding-box;
 }
 .rs-queue__table td:nth-child(2),
 .rs-queue__table td:nth-child(3) {
